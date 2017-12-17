@@ -26,11 +26,8 @@
  */
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.HttpEntity;
