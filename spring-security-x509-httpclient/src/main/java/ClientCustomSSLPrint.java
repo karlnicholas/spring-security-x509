@@ -28,9 +28,9 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.HttpEntity;
@@ -51,39 +51,27 @@ import org.apache.http.util.EntityUtils;
 public class ClientCustomSSLPrint {
 
     public final static void main(String[] args) throws Exception {
-        // Trust own CA and all self-signed certs
-        KeyStore trustStore  = KeyStore.getInstance(KeyStore.getDefaultType());
-        FileInputStream instream = new FileInputStream(new File("../keystore/truststore.jks"));
-        try {
-            trustStore.load(instream,"changeit".toCharArray());
-        } finally {
-            instream.close();
-        }
 
         //establish trust strategy
-        TrustStrategy trustStrategy = new TrustStrategy() {
-            @Override
-            public boolean isTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-                for(X509Certificate cert : x509Certificates){
-                    System.out.println("cert = " + cert);
-                }
-                return true;
+        TrustStrategy trustStrategy = (x509Certificates, s)->{
+            for(X509Certificate cert : x509Certificates){
+                System.out.println("cert = " + cert);
             }
+            return true;
         };
 
-
-        SSLContext sslcontext = SSLContexts.custom().loadKeyMaterial(trustStore, "changeit".toCharArray())
-                .loadTrustMaterial(trustStore, trustStrategy).build();
-        		
-    	
+        SSLContext sslcontext = SSLContexts.custom()
+        		.loadKeyMaterial(new File("../keystore/truststore.jks"), "changeit".toCharArray(), "changeit".toCharArray())
+                .loadTrustMaterial(new File("../keystore/keystore.jks"), "changeit".toCharArray(), trustStrategy)
+                .build();
         
-        // Allow TLSv1 protocol only
-     // Do not do this in production!!!
+        // Allow TLSv1 protocol for any host
+    	// Do not do this in production!!!
         SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
                 sslcontext,
                 new String[] {"TLSv1.1", "TLSv1.2"},
                 null, new NoopHostnameVerifier()
-                );
+            );
         
         CloseableHttpClient httpclient = HttpClients.custom()
                 .setSSLSocketFactory(sslsf)
